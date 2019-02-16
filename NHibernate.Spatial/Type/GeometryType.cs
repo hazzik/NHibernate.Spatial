@@ -35,22 +35,14 @@ namespace NHibernate.Spatial.Type
     [Serializable]
     public class GeometryType : IGeometryUserType
     {
-        private readonly Lazy<IGeometryUserType> geometryUserType;
+        private Lazy<IGeometryUserType> geometryUserType;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GeometryType"/> class.
         /// </summary>
         public GeometryType()
         {
-            this.geometryUserType = new Lazy<IGeometryUserType>(() =>
-            {
-                if (SpatialDialect.LastInstantiated == null)
-                {
-                    throw new MappingException("A GeometryType column has been declared, but there is no spatial dialect configured");
-                }
-
-                return SpatialDialect.LastInstantiated.CreateGeometryUserType();
-            });
+            this.geometryUserType = new Lazy<IGeometryUserType>(CreateGeometryUserType);
         }
 
         #region IGeometryType Members
@@ -198,7 +190,19 @@ namespace NHibernate.Spatial.Type
         /// <param name="parameters"></param>
         public void SetParameterValues(IDictionary<string, string> parameters)
         {
-            this.GeometryUserType.SetParameterValues(parameters);
+            if (this.geometryUserType.IsValueCreated)
+            {
+                this.GeometryUserType.SetParameterValues(parameters);
+            }
+            else
+            {
+                this.geometryUserType = new Lazy<IGeometryUserType>(() =>
+                {
+                    var type = CreateGeometryUserType();
+                    type.SetParameterValues(parameters);
+                    return type;
+                });
+            }
         }
 
         /// <summary>
@@ -230,6 +234,16 @@ namespace NHibernate.Spatial.Type
         private IGeometryUserType GeometryUserType
         {
             get { return this.geometryUserType.Value; }
+        }
+
+        private static IGeometryUserType CreateGeometryUserType()
+        {
+            if (SpatialDialect.LastInstantiated == null)
+            {
+                throw new MappingException("A GeometryType column has been declared, but there is no spatial dialect configured");
+            }
+
+            return SpatialDialect.LastInstantiated.CreateGeometryUserType();
         }
 
         /// <summary>
