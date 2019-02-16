@@ -35,18 +35,22 @@ namespace NHibernate.Spatial.Type
     [Serializable]
     public class GeometryType : IGeometryUserType
     {
-        private readonly IGeometryUserType geometryUserType;
+        private readonly Lazy<IGeometryUserType> geometryUserType;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GeometryType"/> class.
         /// </summary>
         public GeometryType()
         {
-            if (SpatialDialect.LastInstantiated == null)
+            this.geometryUserType = new Lazy<IGeometryUserType>(() =>
             {
-                throw new MappingException("A GeometryType column has been declared, but there is no spatial dialect configured");
-            }
-            this.geometryUserType = SpatialDialect.LastInstantiated.CreateGeometryUserType();
+                if (SpatialDialect.LastInstantiated == null)
+                {
+                    throw new MappingException("A GeometryType column has been declared, but there is no spatial dialect configured");
+                }
+
+                return SpatialDialect.LastInstantiated.CreateGeometryUserType();
+            });
         }
 
         #region IGeometryType Members
@@ -62,7 +66,7 @@ namespace NHibernate.Spatial.Type
         /// </returns>
         public object Assemble(object cached, object owner)
         {
-            return this.geometryUserType.Assemble(cached, owner);
+            return this.GeometryUserType.Assemble(cached, owner);
         }
 
         /// <summary>
@@ -72,7 +76,7 @@ namespace NHibernate.Spatial.Type
         /// <returns>a copy</returns>
         public object DeepCopy(object value)
         {
-            return this.geometryUserType.DeepCopy(value);
+            return this.GeometryUserType.DeepCopy(value);
         }
 
         /// <summary>
@@ -85,7 +89,7 @@ namespace NHibernate.Spatial.Type
         /// <returns>a cacheable representation of the object</returns>
         public object Disassemble(object value)
         {
-            return this.geometryUserType.Disassemble(value);
+            return this.GeometryUserType.Disassemble(value);
         }
 
         /// <summary>
@@ -95,7 +99,7 @@ namespace NHibernate.Spatial.Type
         /// <returns></returns>
         public int GetHashCode(object x)
         {
-            return this.geometryUserType.GetHashCode(x);
+            return this.GeometryUserType.GetHashCode(x);
         }
 
         /// <summary>
@@ -104,7 +108,7 @@ namespace NHibernate.Spatial.Type
         /// <value></value>
         public bool IsMutable
         {
-            get { return this.geometryUserType.IsMutable; }
+            get { return this.GeometryUserType.IsMutable; }
         }
 
         /// <summary>
@@ -121,7 +125,7 @@ namespace NHibernate.Spatial.Type
         /// <exception cref="T:NHibernate.HibernateException">HibernateException</exception>
         public object NullSafeGet(DbDataReader rs, string[] names, ISessionImplementor session, object owner)
         {
-            return this.geometryUserType.NullSafeGet(rs, names, session, owner);
+            return this.GeometryUserType.NullSafeGet(rs, names, session, owner);
         }
 
         /// <summary>
@@ -138,7 +142,7 @@ namespace NHibernate.Spatial.Type
         /// <exception cref="T:NHibernate.HibernateException">HibernateException</exception>
         public void NullSafeSet(DbCommand cmd, object value, int index, ISessionImplementor session)
         {
-            this.geometryUserType.NullSafeSet(cmd, value, index, session);
+            this.GeometryUserType.NullSafeSet(cmd, value, index, session);
         }
 
         /// <summary>
@@ -155,7 +159,7 @@ namespace NHibernate.Spatial.Type
         /// <returns>the value to be merged</returns>
         public object Replace(object original, object target, object owner)
         {
-            return this.geometryUserType.Replace(original, target, owner);
+            return this.GeometryUserType.Replace(original, target, owner);
         }
 
         /// <summary>
@@ -164,7 +168,7 @@ namespace NHibernate.Spatial.Type
         /// <value></value>
         public System.Type ReturnedType
         {
-            get { return this.geometryUserType.ReturnedType; }
+            get { return this.GeometryUserType.ReturnedType; }
         }
 
         /// <summary>
@@ -173,7 +177,7 @@ namespace NHibernate.Spatial.Type
         /// <value></value>
         public SqlTypes.SqlType[] SqlTypes
         {
-            get { return this.geometryUserType.SqlTypes; }
+            get { return this.GeometryUserType.SqlTypes; }
         }
 
         /// <summary>
@@ -184,7 +188,7 @@ namespace NHibernate.Spatial.Type
         /// <returns></returns>
         bool IUserType.Equals(object a, object b)
         {
-            return this.geometryUserType.Equals(a, b);
+            return this.GeometryUserType.Equals(a, b);
         }
 
         /// <summary>
@@ -194,7 +198,7 @@ namespace NHibernate.Spatial.Type
         /// <param name="parameters"></param>
         public void SetParameterValues(IDictionary<string, string> parameters)
         {
-            this.geometryUserType.SetParameterValues(parameters);
+            this.GeometryUserType.SetParameterValues(parameters);
         }
 
         /// <summary>
@@ -203,7 +207,7 @@ namespace NHibernate.Spatial.Type
         /// <value></value>
         public int SRID
         {
-            get { return this.geometryUserType.SRID; }
+            get { return this.GeometryUserType.SRID; }
         }
 
         /// <summary>
@@ -212,7 +216,7 @@ namespace NHibernate.Spatial.Type
         /// <value></value>
         public string Subtype
         {
-            get { return this.geometryUserType.Subtype; }
+            get { return this.GeometryUserType.Subtype; }
         }
 
         /// <summary>
@@ -220,7 +224,12 @@ namespace NHibernate.Spatial.Type
         /// </summary>
         public int Dimension
         {
-            get { return this.geometryUserType.Dimension; }
+            get { return this.GeometryUserType.Dimension; }
+        }
+
+        private IGeometryUserType GeometryUserType
+        {
+            get { return this.geometryUserType.Value; }
         }
 
         /// <summary>
